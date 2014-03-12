@@ -23,5 +23,5 @@ Gem::Specification.new do |s|
   s.add_dependency('rubyzip', ['~> 1.1'])
 
   s.homepage = 'https://github.com/nowk/em-zipstream'
-  s.license = 'MIT'
+  s.license = 'PRIVATE'
 end

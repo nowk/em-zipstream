@@ -2,9 +2,9 @@ PATH
   remote: .
   specs:
     em-zipstream (0.0.1)
-      em-http-request (~> 1.1.2)
-      eventmachine (~> 1.0.3)
-      rubyzip (~> 1.1.0)
+      em-http-request (~> 1.1)
+      eventmachine (~> 1.0)
+      rubyzip (~> 1.1)
 
 GEM
   remote: http://rubygems.org/

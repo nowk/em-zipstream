@@ -44,15 +44,13 @@ module EventMachine::Zip
 
     def write!
       @f = Fiber.current
-      new_entry = ::Zip::Entry.new '-', file_name
-      zos.put_next_entry new_entry
-      zip_entry!
+      _write
       Fiber.yield
     end
 
     private
 
-    def zip_entry!
+    def _write
       case path
       when /\A(http|https):\/\//
         zip_from_http
@@ -61,12 +59,23 @@ module EventMachine::Zip
       end
     end
 
+    def create_entry
+      new_entry = ::Zip::Entry.new '-', file_name
+      zos.put_next_entry new_entry
+    end
 
-    # TODO this seems chunky, should we classify?
 
     def zip_from_file
       @file = File.open path, 'r'
-      zip_file = proc do
+      create_entry
+      zip_file.call
+    rescue Errno::ENOENT
+      errorize_file!
+      ::EM.next_tick { @f.resume }
+    end
+
+    def zip_file
+      proc do
         begin
           if buff = @file.read_nonblock(1024)
             zos << buff
@@ -77,14 +86,25 @@ module EventMachine::Zip
           @f.resume
         end
       end
-      zip_file.call
     end
+
 
     def zip_from_http
       @file = ::EM::HttpRequest.new(path).get # TODO connect_timeout: 5, inactivity_timeout: 10
 
+      @file.headers do |hash|
+        unless hash.status == 200
+          errorize_file!
+          @file.fail
+        else
+          create_entry
+        end
+      end
+
       @file.stream do |chunk|
-        zos << chunk
+        begin
+          zos << chunk
+        rescue IOError; end
       end
 
       @file.callback do
@@ -92,8 +112,15 @@ module EventMachine::Zip
       end
 
       @file.errback do |err|
-        raise EntryError
+        @f.resume
       end
+    end
+
+
+    def errorize_file!
+      @file_name << '.error.txt'
+      create_entry
+      zos << 'This File could not be retrieved or is invalid'
     end
   end
 end

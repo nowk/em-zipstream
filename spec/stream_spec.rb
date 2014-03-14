@@ -23,7 +23,7 @@ describe 'streamio' do
   end
 
   it 'streams a zip' do
-    pending
+    pending 'view archiver.io tests'
     apost '/download/zip', {files: [File1, File2]}
     expect(last_response.status).to eq 200
   end
